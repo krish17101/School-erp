@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountStatus {
+  ACTIVE
+  LOCKED
+  DISABLED
+}
+
+model School {
+  id                  String   @id @default(uuid()) @db.Uuid
+  schoolName          String   @map("school_name") @db.VarChar(200)
+  schoolCode          String   @unique @map("school_code") @db.VarChar(50)
+  registrationNumber  String?  @map("registration_number") @db.VarChar(100)
+  affiliationNumber   String?  @map("affiliation_number") @db.VarChar(100)
+  email               String?  @db.VarChar(150)
+  phone               String?  @db.VarChar(30)
+  website             String?  @db.VarChar(200)
+  address             String?
+  city                String?  @db.VarChar(100)
+  state               String?  @db.VarChar(100)
+  country             String?  @db.VarChar(100)
+  postalCode          String?  @map("postal_code") @db.VarChar(20)
+  logo                String?
+  principalName       String?  @map("principal_name") @db.VarChar(150)
+  establishedYear     Int?     @map("established_year")
+  isActive            Boolean  @default(true) @map("is_active")
+  isDeleted           Boolean  @default(false) @map("is_deleted")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  createdById         String?  @map("created_by") @db.Uuid
+  updatedById         String?  @map("updated_by") @db.Uuid
+  createdBy           User?    @relation("school_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy           User?    @relation("school_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("school")
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  roleName        String           @unique @map("role_name") @db.VarChar(100)
+  description     String?
+  isSystemRole    Boolean          @default(false) @map("is_system_role")
+  isActive        Boolean          @default(true) @map("is_active")
+  isDeleted       Boolean          @default(false) @map("is_deleted")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  rolePermissions RolePermission[]
+  users           User[]
+
+  @@map("role")
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  permissionName  String           @unique @map("permission_name") @db.VarChar(150)
+  moduleName      String           @map("module_name") @db.VarChar(100)
+  description     String?
+  isActive        Boolean          @default(true) @map("is_active")
+  isDeleted       Boolean          @default(false) @map("is_deleted")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  rolePermissions RolePermission[]
+
+  @@index([moduleName])
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model User {
+  id                     String      @id @default(uuid()) @db.Uuid
+  username               String      @unique @db.VarChar(100)
+  email                  String      @unique @db.VarChar(150)
+  passwordHash           String      @map("password_hash")
+  roleId                 String?     @map("role_id") @db.Uuid
+  isEmailVerified        Boolean     @default(false) @map("is_email_verified")
+  lastLogin              DateTime?   @map("last_login")
+  accountStatus          AccountStatus @default(ACTIVE) @map("account_status")
+  isActive               Boolean     @default(true) @map("is_active")
+  isDeleted              Boolean     @default(false) @map("is_deleted")
+  createdAt              DateTime    @default(now()) @map("created_at")
+  updatedAt              DateTime    @updatedAt @map("updated_at")
+  role                   Role?       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  auditLogs              AuditLog[]
+  schoolsCreated         School[]    @relation("school_created_by")
+  schoolsUpdated         School[]    @relation("school_updated_by")
+  settingsCreated        SystemSetting[] @relation("setting_created_by")
+  settingsUpdated        SystemSetting[] @relation("setting_updated_by")
+
+  @@index([roleId])
+  @@map("user")
+}
+
+model AuditLog {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String?   @map("user_id") @db.Uuid
+  module    String    @db.VarChar(100)
+  action    String    @db.VarChar(100)
+  recordId  String?   @map("record_id") @db.Uuid
+  oldValue  Json?     @map("old_value")
+  newValue  Json?     @map("new_value")
+  ipAddress String?   @map("ip_address") @db.VarChar(100)
+  userAgent String?   @map("user_agent")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([module, action])
+  @@index([recordId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  settingKey  String   @unique @map("setting_key") @db.VarChar(150)
+  settingValue String  @map("setting_value")
+  category    String   @db.VarChar(100)
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdById String?  @map("created_by") @db.Uuid
+  updatedById String?  @map("updated_by") @db.Uuid
+  createdBy   User?    @relation("setting_created_by", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   User?    @relation("setting_updated_by", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@map("system_setting")
+}

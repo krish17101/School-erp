@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+package-lock.json
+backend/logs
+backend/uploads
+database/backup
+database/restore

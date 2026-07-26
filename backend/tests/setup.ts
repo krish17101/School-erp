@@ -1,0 +1,10 @@
+process.env.NODE_ENV = 'test';
+process.env.PORT = '4001';
+process.env.DATABASE_URL = 'postgresql://school_erp_user:test_password@localhost:5432/school_erp_test?schema=public';
+process.env.CORS_ORIGINS = 'http://localhost:5173';
+process.env.LOG_LEVEL = 'error';
+process.env.LOG_DIRECTORY = './logs';
+process.env.UPLOAD_PATH = './uploads';
+process.env.MAX_UPLOAD_SIZE_BYTES = '10485760';
+process.env.JWT_SECRET = 'test_jwt_secret_with_at_least_thirty_two_characters';
+process.env.REFRESH_TOKEN_SECRET = 'test_refresh_secret_with_at_least_thirty_two_characters';
